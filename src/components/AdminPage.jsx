@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useAuthContext from "../context/useAuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -6,12 +6,18 @@ const AdminPage = () => {
   const navigate = useNavigate();
   const { logout } = useAuthContext();
   const [selectedOption, setSelectedOption] = useState("dashboard");
+  const [empleado, setEmpleado] = useState("");
   const [accionSeleccionada, setAccionSeleccionada] = useState(null);
+  const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
   const [empleados, setEmpleados] = useState([]); // Este estado puede contener la lista de empleados
   const [formData, setFormData] = useState({
-    nombre: "",
-    apellido: "",
-    email: "",
+    NumEmpleado: "",
+    CURP: "",
+    Nombre: "",
+    PrimerApe: "",
+    SegundoApe: "",
+    Academia: "",
+    Rol: "",
   });
 
   const handleMenuClick = (option) => {
@@ -26,44 +32,97 @@ const AdminPage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleAltaSubmit = (e) => {
+  const handleAltaSubmit = async (e) => {
     e.preventDefault();
-    // Aquí iría la lógica para enviar el formulario de alta de empleado
-    console.log("Alta de empleado:", formData);
-    // Simulando la adición del nuevo empleado
-    setEmpleados([...empleados, formData]);
-    setFormData({ nombre: "", apellido: "", email: "" }); // Limpiar formulario
-  };
 
-  const handleBajaSubmit = (numEmpleado) => {
-    // Lógica para eliminar un empleado (simulada)
-    setEmpleados(empleados.filter((emp) => emp.numEmpleado !== numEmpleado));
-  };
+    const curpRegex = /^[A-Z]{4}[0-9]{6}[A-Z]{7}[0-9]{1}$/;
+    if (!curpRegex.test(formData.CURP)) {
+      alert("CURP inválido. Verifica los datos ingresados.");
+      return;
+    }
 
-  const handleLecturaSubmit = async () => {
     try {
       const response = await fetch(
-        "http://localhost/control_Asistencia/php/getEmpleados.php",
+        "http://localhost/control_Asistencia/php/altaEmpleado.php",
         {
-          method: "GET",
+          method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
           },
+          body: new URLSearchParams(formData),
           credentials: "include",
         }
       );
 
       const data = await response.json();
       if (data.cod === 1) {
-        setEmpleados(data.empleados);
-        console.log(empleados);
-      } else {
-        console.log(data.msj);
+        alert("Empleado registrado exitosamente.");
+        setFormData({
+          NumEmpleado: "",
+          CURP: "",
+          Nombre: "",
+          PrimerApe: "",
+          SegundoApe: "",
+          Academia: "",
+          Rol: "",
+        });
+      } else if (data.cod === 0) {
+        alert(data.msj);
       }
     } catch (error) {
-      console.error("Error al conectar con el servidor.", error);
+      console.error("Error en la conexión al servidor.", error);
     }
-    console.log("Mostrando empleados");
+  };
+
+  const handleBajaSubmit = () => {
+    const empleadoEncontrado = empleados.find(
+      (emp) => emp.NumEmpleado === empleado
+    );
+
+    if (empleadoEncontrado) {
+      setEmpleadoSeleccionado(empleadoEncontrado);
+    } else {
+      setEmpleadoSeleccionado(null);
+      alert("Empleado no encontrado. Verifica el número de empleado.");
+    }
+  };
+
+  const handleDeleteEmpleado = async () => {
+    if (
+      confirm("¿Estás seguro de que deseas elemirar al empleado del resgitro?")
+    ) {
+      try {
+        const response = await fetch(
+          "http://localhost/control_Asistencia/php/deleteEmpleado.php",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({ empleado }),
+            credentials: "include",
+          }
+        );
+
+        const data = await response.json();
+        console.log(data);
+        if (data.cod === 1) {
+          alert("Empleado eliminado exitosamente.");
+          setEmpleado("");
+        } else {
+          alert("No se pudo eliminar el empleado. " + data.msj);
+        }
+      } catch (error) {
+        console.error("Error en la conexión al servidor.", error);
+      }
+
+      setEmpleado("");
+      setEmpleadoSeleccionado(null);
+    }
+  };
+
+  const handleLecturaSubmit = async () => {
+    setAccionSeleccionada("lectura");
   };
 
   const handleModificacionSubmit = (numEmpleado, nuevoEmpleado) => {
@@ -80,6 +139,34 @@ const AdminPage = () => {
     window.history.replaceState(null, "", "/");
     navigate("/");
   };
+
+  useEffect(() => {
+    const fetchEmpelados = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost/control_Asistencia/php/getEmpleados.php",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            credentials: "include",
+          }
+        );
+
+        const data = await response.json();
+        if (data.cod === 1) {
+          setEmpleados(data.empleados);
+        } else {
+          console.log(data.msj);
+        }
+      } catch (error) {
+        console.error("Error al conectar con el servidor.", error);
+      }
+    };
+
+    fetchEmpelados();
+  }, []);
 
   return (
     <div className="w-full flex min-h-screen">
@@ -107,7 +194,7 @@ const AdminPage = () => {
           </li>
           <li
             className="cursor-pointer hover:bg-blue-600 p-3 rounded-md"
-            onClick={handleLogout}
+            onClick={() => handleLogout()}
           >
             Cerrar sesión
           </li>
@@ -158,7 +245,7 @@ const AdminPage = () => {
               </button>
               <button
                 className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
-                onClick={() => handleAccionClick("lectura")}
+                onClick={() => handleLecturaSubmit()}
               >
                 Lista de Empleados
               </button>
@@ -173,7 +260,7 @@ const AdminPage = () => {
             {/* Lógica según la acción seleccionada */}
             {accionSeleccionada === "alta" && (
               <div className="mt-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                <h3 className="text-lg text-center font-semibold text-gray-800 mb-4">
                   Alta de Empleado
                 </h3>
                 <form onSubmit={handleAltaSubmit}>
@@ -182,80 +269,148 @@ const AdminPage = () => {
                       htmlFor="NumEmpleado"
                       className="block text-sm font-medium text-gray-700"
                     >
-                      Nombre(s)
+                      Número de Empleado
                     </label>
                     <input
                       type="number"
                       name="NumEmpleado"
                       id="NumEmpleado"
-                      value={formData.NumEmpleado}
+                      value={formData.NumEmpleado || ""}
                       onChange={handleFormChange}
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
                     />
+                    <div className="mb-4">
+                      <label
+                        htmlFor="CURP"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        CURP
+                      </label>
+                      <input
+                        type="text"
+                        name="CURP"
+                        id="CURP"
+                        value={formData.CURP || ""}
+                        onChange={handleFormChange}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
                   </div>
                   <div className="mb-4">
                     <label
-                      htmlFor="nombre"
+                      htmlFor="Nombre"
                       className="block text-sm font-medium text-gray-700"
                     >
                       Nombre(s)
                     </label>
                     <input
                       type="text"
-                      name="nombre"
-                      id="nombre"
-                      value={formData.nombre}
+                      name="Nombre"
+                      id="Nombre"
+                      value={formData.Nombre || ""}
                       onChange={handleFormChange}
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
                     />
                   </div>
                   <div className="mb-4">
                     <label
-                      htmlFor="nombre"
+                      htmlFor="PrimerApe"
                       className="block text-sm font-medium text-gray-700"
                     >
                       Apellido Paterno
                     </label>
                     <input
                       type="text"
-                      name="nombre"
-                      id="nombre"
-                      value={formData.nombre}
+                      name="PrimerApe"
+                      id="PrimerApe"
+                      value={formData.PrimerApe || ""}
                       onChange={handleFormChange}
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
                     />
                   </div>
                   <div className="mb-4">
                     <label
-                      htmlFor="apellido"
+                      htmlFor="SegundoApe"
                       className="block text-sm font-medium text-gray-700"
                     >
                       Apellido Materno
                     </label>
                     <input
                       type="text"
-                      name="apellido"
-                      id="apellido"
-                      value={formData.apellido}
+                      name="SegundoApe"
+                      id="SegundoApe"
+                      value={formData.SegundoApe || ""}
                       onChange={handleFormChange}
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
                     />
                   </div>
                   <div className="mb-4">
                     <label
-                      htmlFor="email"
+                      htmlFor="Academia"
                       className="block text-sm font-medium text-gray-700"
                     >
-                      Email
+                      Academia
                     </label>
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      value={formData.email}
+                    <select
+                      name="Academia"
+                      id="Academia"
+                      value={formData.Academia || ""}
                       onChange={handleFormChange}
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
+                    >
+                      <option value="" disabled>
+                        Selecciona una academia
+                      </option>
+                      <option value="null">
+                        No pertenece a alguna de las opciones
+                      </option>
+                      <option value="ACB">Academia de Ciencias Básicas</option>
+                      <option value="ACC">
+                        Academia de Ciencias de la Comunicación
+                      </option>
+                      <option value="ACD">Academia de Ciencia de Datos</option>
+                      <option value="ACS">Academia de Ciencias Sociales</option>
+                      <option value="AFSE">
+                        Academia de Fundamentos de Sistemas Electrónicos
+                      </option>
+                      <option value="AIA">
+                        Academia de Inteligencia Artificial
+                      </option>
+                      <option value="AIS">
+                        Academia de Ingeniería de Software
+                      </option>
+                      <option value="APETD">
+                        Academia de Proyectos Estratégicos y Toma de Decisiones
+                      </option>
+                      <option value="ASDIG">
+                        Academia de Sistemas Digitales
+                      </option>
+                      <option value="ASDIS">
+                        Academia de Sistemas Distribuidos
+                      </option>
+                    </select>
+                  </div>
+                  <div className="mb-4">
+                    <label
+                      htmlFor="Rol"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Rol
+                    </label>
+                    <select
+                      name="Rol"
+                      id="Rol"
+                      value={formData.Rol}
+                      onChange={handleFormChange}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="" disabled>
+                        Selecciona el rol
+                      </option>
+                      <option value="Administrador">Administrador</option>
+                      <option value="Docente">Docente</option>
+                      <option value="Jefe">Jefe</option>
+                    </select>
                   </div>
                   <button
                     type="submit"
@@ -268,42 +423,162 @@ const AdminPage = () => {
             )}
 
             {accionSeleccionada === "baja" && (
-              <div className="mt-6">
+              <div className="mt-6 text-center">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">
                   Baja de Empleado
                 </h3>
-                <p>Selecciona el empleado a dar de baja.</p>
-                <ul>
-                  {empleados.map((emp) => (
-                    <li key={emp.email} className="mb-2">
-                      {emp.nombre} {emp.apellido}
+                <div>
+                  <label className="pr-4" htmlFor="empleado">
+                    Ingresa el número de empleado:
+                  </label>
+                  <input
+                    type="number"
+                    name="empleado"
+                    id="empleado"
+                    className="mt-2 p-2 border rounded-md"
+                    placeholder="Número de empleado"
+                    value={empleado}
+                    onChange={(e) => setEmpleado(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="mt-6 bg-indigo-600 text-white py-2 px-6 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200 text-lg"
+                  onClick={() => handleBajaSubmit()}
+                >
+                  Buscar empleado
+                </button>
+                {empleadoSeleccionado ? (
+                  <div className="mt-4">
+                    <table className="min-w-full bg-gray-500 border border-gray-300">
+                      <thead className="text-white">
+                        <tr>
+                          <th className="px-4 py-2 border border-gray-300 text-center">
+                            Número de Empleado
+                          </th>
+                          <th className="px-4 py-2 border border-gray-300 text-center">
+                            CURP
+                          </th>
+                          <th className="px-4 py-2 border border-gray-300 text-center">
+                            Nombre
+                          </th>
+                          <th className="px-4 py-2 border border-gray-300 text-center">
+                            Primer Apellido
+                          </th>
+                          <th className="px-4 py-2 border border-gray-300 text-center">
+                            Segundo Apellido
+                          </th>
+                          <th className="px-4 py-2 border border-gray-300 text-center">
+                            Academia
+                          </th>
+                          <th className="px-4 py-2 border border-gray-300 text-center">
+                            Rol
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-center">
+                        <tr
+                          key={empleadoSeleccionado.CURP}
+                          className="bg-gray-50"
+                        >
+                          <td className="px-4 py-2 border border-gray-300">
+                            {empleadoSeleccionado.NumEmpleado}
+                          </td>
+                          <td className="px-4 py-2 border border-gray-300">
+                            {empleadoSeleccionado.CURP}
+                          </td>
+                          <td className="px-4 py-2 border border-gray-300">
+                            {empleadoSeleccionado.Nombre}
+                          </td>
+                          <td className="px-4 py-2 border border-gray-300">
+                            {empleadoSeleccionado.PrimerApe}
+                          </td>
+                          <td className="px-4 py-2 border border-gray-300">
+                            {empleadoSeleccionado.SegundoApe}
+                          </td>
+                          <td className="px-4 py-2 border border-gray-300">
+                            {empleadoSeleccionado.Academia}
+                          </td>
+                          <td className="px-4 py-2 border border-gray-300">
+                            {empleadoSeleccionado.rol}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div className="mt-8">
                       <button
-                        onClick={() => handleBajaSubmit(emp.email)}
-                        className="ml-4 text-red-600 hover:text-red-800"
+                        className="mt-6 bg-indigo-600 text-white py-2 px-6 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200 text-lg"
+                        onClick={() => handleDeleteEmpleado()}
                       >
-                        Eliminar
+                        Eliminar empleado
                       </button>
-                    </li>
-                  ))}
-                </ul>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             )}
 
             {accionSeleccionada === "lectura" && (
               <div className="mt-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                <h3 className="text-lg text-center font-semibold text-gray-800 mb-4">
                   Lista de Empleados
                 </h3>
-                <ul>
-                  {empleados.map((empleado) => (
-                    <li key={empleado.CURP} className="mb-2">
-                      {empleado.NumEmpleado} {empleado.CURP} {empleado.Nombre}
-                      {empleado.PrimerApe} {empleado.SegundoApe}
-                      {empleado.Academia}
-                      {empleado.Email} {empleado.rol}
-                    </li>
-                  ))}
-                </ul>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-gray-500 border border-gray-300">
+                    <thead className="text-white">
+                      <tr>
+                        <th className="px-4 py-2 border border-gray-300 text-center">
+                          Número de Empleado
+                        </th>
+                        <th className="px-4 py-2 border border-gray-300 text-center">
+                          CURP
+                        </th>
+                        <th className="px-4 py-2 border border-gray-300 text-center">
+                          Nombre
+                        </th>
+                        <th className="px-4 py-2 border border-gray-300 text-center">
+                          Primer Apellido
+                        </th>
+                        <th className="px-4 py-2 border border-gray-300 text-center">
+                          Segundo Apellido
+                        </th>
+                        <th className="px-4 py-2 border border-gray-300 text-center">
+                          Academia
+                        </th>
+
+                        <th className="px-4 py-2 border border-gray-300 text-center">
+                          Rol
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-center">
+                      {empleados.map((empleado) => (
+                        <tr key={empleado.CURP} className={"bg-gray-50"}>
+                          <td className="px-4 py-2 border border-gray-300">
+                            {empleado.NumEmpleado}
+                          </td>
+                          <td className="px-4 py-2 border border-gray-300">
+                            {empleado.CURP}
+                          </td>
+                          <td className="px-4 py-2 border border-gray-300">
+                            {empleado.Nombre}
+                          </td>
+                          <td className="px-4 py-2 border border-gray-300">
+                            {empleado.PrimerApe}
+                          </td>
+                          <td className="px-4 py-2 border border-gray-300">
+                            {empleado.SegundoApe}
+                          </td>
+                          <td className="px-4 py-2 border border-gray-300">
+                            {empleado.Academia}
+                          </td>
+                          <td className="px-4 py-2 border border-gray-300">
+                            {empleado.rol}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
 

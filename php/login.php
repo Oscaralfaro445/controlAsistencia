@@ -2,16 +2,6 @@
 
 include "connection.php";
 
-// Verifica si el usuario tiene la sesión activa
-if (!isset($_SESSION["NumEmpleado"])) {
-    echo json_encode([
-        "cod" => 0,
-        "msj" => "No tienes acceso a esta información.",
-        "icono" => "error"
-    ]);
-    exit;
-}
-
 // Obtención de los datos enviados por la solicitud
 $NumEmpleado = $_REQUEST["NumEmpleado"] ?? '';
 $password = $_REQUEST["password"] ?? '';
