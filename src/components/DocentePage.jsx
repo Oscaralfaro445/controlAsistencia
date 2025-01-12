@@ -43,30 +43,90 @@ const DocentePage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Función para generar el PDF con los datos
-  const generatePDF = () => {
-    const doc = new jsPDF();
-
-    doc.setFont("helvetica", "normal");
-    doc.text(`Reporte de Asistencia - Fecha: ${selectedDate}`, 10, 10);
-
-    // Aquí agregamos los datos según el tipo de justificante
-    doc.text(`Tipo de Justificante: ${justificanteType}`, 10, 20);
-
-    if (justificanteType === "Pago de tiempo") {
-      doc.text(
-        `Fechas seleccionadas: ${formData.startDate} - ${formData.endDate}`,
-        10,
-        30
-      );
-    } else if (justificanteType === "Corrimiento de horario") {
-      doc.text(`Nuevo horario: ${formData.newTime}`, 10, 30);
-    } else if (justificanteType === "Día económico") {
-      doc.text(`Motivo: ${formData.motivo}`, 10, 30);
-    }
-
-    doc.save(`reporte_asistencia_${selectedDate}.pdf`);
-  };
+    // Función para obtener la fecha en español
+    const formatDateInSpanish = (date) => {
+      const options = {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      };
+      // Obtiene la fecha en español con el formato "día mes, año"
+      return date.toLocaleDateString('es-ES', options);
+    };
+      // Función para generar el PDF con los datos (Corrimiento de Horario)
+      const generatePDF = () => {
+        const doc = new jsPDF();
+    
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        
+        const logoSize = 20;
+        const margin = 10;
+    
+        doc.addImage("../imgs/logoIPN.jpg", "JPEG", margin, margin, logoSize, logoSize);
+        doc.addImage("../imgs/logoESCOM.jpg", "JPEG", 190 - logoSize, margin, logoSize, logoSize);
+    
+        doc.setTextColor("#9B1003");
+        doc.text("INSTITUTO POLITÉCNICO NACIONAL", 105, 20, { align: "center" });
+        doc.setTextColor("#0979B0");
+        doc.text("ESCUELA SUPERIOR DE CÓMPUTO", 105, 28, { align: "center" });
+        doc.setTextColor("black");
+        doc.text("SUBDIRECCIÓN ACADÉMICA", 105, 36, { align: "center" });
+      
+        // Departamento académico (genérico, se puede cambiar dinámicamente)
+        doc.setFontSize(12);
+        doc.text("[NOMBRE DEL DEPARTAMENTO ACADÉMICO]", 105, 50, { align: "center" });
+      
+        doc.setFontSize(14);
+        doc.text("MEMORANDUM", 105, 70, { align: "center" });
+      
+        doc.setFontSize(12);
+        // Extraer la hora de `formData.newTime`
+        const timeOnly = formData.newTime.split("T")[1]; // Obtiene "18:30" de "2025-01-14T18:30"
+        
+        // Fecha en español
+        const currentDate = formatDateInSpanish(new Date());
+        doc.text(`${currentDate}`, 140, 87); // Fecha en formato español
+      
+        // Convertir selectedDate (string) a un objeto Date
+        const selectedDateObject = new Date(selectedDate);
+  
+        // Formatear selectedDate al formato en español
+        const formattedSelectedDate = formatDateInSpanish(selectedDateObject);
+  
+        doc.text("MEMO/[ID-DEPACADEMICO]/[CONSECUTIVO]/[AÑO EN CURSO]", 20, 95);
+      
+        doc.text("DE: [NOMBRE DE JEFE ACADÉMICO]", 20, 115);
+        doc.text("JEFE DE [NOMBRE DEL DEPARTAMENTO ACADÉMICO]", 20, 123);    
+        doc.text("PARA: [NOMBRE JEFE DCH]", 20, 140);
+        doc.text("JEFE DEL DEPARTAMENTO DE CAPITAL HUMANO", 20, 148);
+      
+        doc.text(`Asunto: ${justificanteType}`, 20, 165);
+      
+        // Contenido principal
+        doc.setFont("helvetica", "normal");
+        doc.text(
+          "Por medio de la presente solicito a usted tenga a bien considerar que", 20, 180
+        );
+        doc.text(
+          "[nombre del empleado] con número de empleado [núm. empleado] laborará, por", 20, 188
+        );
+        doc.text(
+          `necesidades de esta unidad, el día ${formattedSelectedDate} en un horario de`, 20, 196
+        );
+        doc.text(`${timeOnly}`, 20, 204);
+  
+        // Firma y despedida
+        doc.text(
+          "Quedo a sus órdenes para cualquier duda al respecto y aprovecho para", 20, 220
+        );
+        doc.text("enviarle un cordial saludo.", 20, 228);
+      
+        doc.setFont("helvetica", "bold");
+        doc.text("ATENTAMENTE", 105, 260, { align: "center" });
+    
+        doc.save(`reporte_asistencia_${selectedDate}.pdf`);
+      };
 
   const handleLogout = () => {
     logout();
