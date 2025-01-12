@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useAuthContext from "../context/useAuthContext";
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf"; // Librería jsPDF para generar PDFs
 
 const DocentePage = () => {
   const navigate = useNavigate();
-  const { logout } = useAuthContext();
+  const { logout, login, user } = useAuthContext();
   const [selectedOption, setSelectedOption] = useState("dashboard");
+  const [incidencias, setIncidencias] = useState([]);
   const [selectedDate, setSelectedDate] = useState(""); // Estado para la fecha seleccionada
 
   // Estado para manejar el wizard
@@ -73,6 +74,53 @@ const DocentePage = () => {
     navigate("/");
   };
 
+  useEffect(() => {
+    if (!user) {
+      // Verifica si hay un usuario en localStorage
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        // Si existe, conviértelo en objeto y actualiza el estado y el contexto
+        const parsedUser = JSON.parse(storedUser);
+        login(parsedUser); // Actualiza el contexto con los datos del usuario desde localStorage
+      } else {
+        // Si no hay usuario en localStorage, redirige al login
+        navigate("/");
+      }
+    } else {
+      const fetchIncidencias = async () => {
+        try {
+          const response = await fetch(
+            "http://localhost/control_Asistencia/php/getIncidencias.php",
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              credentials: "include",
+            }
+          );
+
+          const data = await response.json();
+          if (data.cod === 1) {
+            setIncidencias(data.incidencias);
+            login({
+              ...user,
+              NumEmpleado: data.NumEmpleado,
+              Academia: data.Academia,
+            });
+          } else {
+            console.log(data.msj);
+          }
+        } catch (error) {
+          console.error("Error al conectar con el servicio.", error);
+        }
+      };
+      fetchIncidencias();
+      console.log(user.NumEmpleado);
+      console.log(user.Academia);
+    }
+  }, []);
+
   return (
     <div className="w-full flex min-h-screen">
       {/* Barra lateral */}
@@ -87,9 +135,15 @@ const DocentePage = () => {
           </li>
           <li
             className="cursor-pointer hover:bg-blue-600 p-3 rounded-md"
-            onClick={() => handleMenuClick("usuarios")}
+            onClick={() => handleMenuClick("solicitud")}
           >
-            Control de incidencias
+            Solicitud de incidencias
+          </li>
+          <li
+            className="cursor-pointer hover:bg-blue-600 p-3 rounded-md"
+            onClick={() => handleMenuClick("registro")}
+          >
+            Registro de incidencias
           </li>
           <li
             className="cursor-pointer hover:bg-blue-600 p-3 rounded-md"
@@ -116,7 +170,7 @@ const DocentePage = () => {
         </p>
 
         {/* Wizard para control de incidencias */}
-        {selectedOption === "usuarios" && (
+        {selectedOption === "solicitud" && (
           <div className="mt-8 p-6 bg-white shadow-md rounded-lg">
             <h2 className="text-xl font-semibold text-gray-800">
               Control de incidencias
@@ -230,6 +284,66 @@ const DocentePage = () => {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {selectedOption === "registro" && (
+          <div className="mt-8 p-6 bg-white shadow-md rounded-lg">
+            <h2 className="text-center text-xl font-semibold text-gray-800">
+              Revisión de solicitudes de incidencias
+            </h2>
+            <table className="my-6 min-w-full bg-gray-500 border border-gray-300">
+              <thead className="text-white">
+                <tr>
+                  <th className="px-4 py-2 border border-gray-300 text-center">
+                    Número de Empleado
+                  </th>
+                  <th className="px-4 py-2 border border-gray-300 text-center">
+                    Nombre
+                  </th>
+                  <th className="px-4 py-2 border border-gray-300 text-center">
+                    Academia
+                  </th>
+                  <th className="px-4 py-2 border border-gray-300 text-center">
+                    Tipo de incidencia
+                  </th>
+                  <th className="px-4 py-2 border border-gray-300 text-center">
+                    Estado
+                  </th>
+                  <th className="px-4 py-2 border border-gray-300 text-center">
+                    Fecha de solicitud
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="text-center">
+                {incidencias
+                  .filter(
+                    (incidencia) => incidencia.NumEmpleado === user.NumEmpleado
+                  )
+                  .map((incidencia) => (
+                    <tr key={incidencia.ID} className={"bg-gray-50"}>
+                      <td className="px-4 py-2 border border-gray-300">
+                        {incidencia.NumEmpleado}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-300">
+                        {incidencia.Nombre}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-300">
+                        {incidencia.Academia}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-300">
+                        {incidencia.TipoIncidencia}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-300">
+                        {incidencia.Estado}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-300">
+                        {incidencia.FechaSolicitud}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
           </div>
         )}
 

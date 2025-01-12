@@ -29,9 +29,14 @@ const Login = () => {
       );
 
       const data = await response.json();
+      console.log(data);
       if (data.cod === 1) {
         setError(null);
-        login({ NumEmpleado: data.NumEmpleado, rol: data.rol });
+        login({
+          NumEmpleado: data.NumEmpleado,
+          rol: data.rol,
+          Academia: data.Academia,
+        });
         localStorage.setItem(
           "user",
           JSON.stringify({ NumEmpleado: data.NumEmpleado, rol: data.rol })
