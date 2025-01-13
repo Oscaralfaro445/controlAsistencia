@@ -43,30 +43,233 @@ const DocentePage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Función para generar el PDF con los datos
-  const generatePDF = () => {
+    // Función para obtener la fecha en español
+    const formatDateInSpanish = (date) => {
+    const options = {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+    };
+      // Obtiene la fecha en español con el formato "día mes, año"
+      return date.toLocaleDateString('es-ES', options);
+    };
+    // Extraer la hora de `formData.newTime`
+    const timeOnly = formData.newTime.split("T")[1]; // Obtiene "18:30" de "2025-01-14T18:30"
+    // Extraer la hora de `formData.newTime`
+    const yearOnly = formData.newTime.split("-")[0];
+
+    // Función para generar el PDF con los datos
+    const generatePDF = () => {
     const doc = new jsPDF();
+    
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        
+        const logoSize = 20;
+        const margin = 10;
+    
+        doc.addImage("../imgs/logoIPN.jpg", "JPEG", margin, margin, logoSize, logoSize);
+        doc.addImage("../imgs/logoESCOM.jpg", "JPEG", 190 - logoSize, margin, logoSize, logoSize);
 
-    doc.setFont("helvetica", "normal");
-    doc.text(`Reporte de Asistencia - Fecha: ${selectedDate}`, 10, 10);
+        // Muestra un contenido diferente para cada Tipo de Justificante
+        if (justificanteType === "Corrimiento de horario"){
+          //CORRIMIENTO DE HORARIO
+          doc.setTextColor("#9B1003");
+          doc.text("INSTITUTO POLITÉCNICO NACIONAL", 105, 20, { align: "center" });
+          doc.setTextColor("#0979B0");
+          doc.text("ESCUELA SUPERIOR DE CÓMPUTO", 105, 28, { align: "center" });
+          doc.setTextColor("black");
+          doc.text("SUBDIRECCIÓN ACADÉMICA", 105, 36, { align: "center" });
+        
+          // Departamento académico (genérico, se puede cambiar dinámicamente)
+          doc.setFontSize(12);
+          doc.text("[NOMBRE DEL DEPARTAMENTO ACADÉMICO]", 105, 50, { align: "center" });
+        
+          doc.setFontSize(14);
+          doc.text("MEMORANDUM", 105, 70, { align: "center" });
+        
+          doc.setFontSize(12);
 
-    // Aquí agregamos los datos según el tipo de justificante
-    doc.text(`Tipo de Justificante: ${justificanteType}`, 10, 20);
+          // Fecha ACTUAL en español
+          const currentDate = formatDateInSpanish(new Date());
+          doc.text(`${currentDate}`, 140, 87); // Fecha en formato español
+        
+          // Convertir selectedDate (string) a un objeto Date
+          const selectedDateObject = new Date(selectedDate);
+    
+          // Formatear selectedDate al formato en español
+          const formattedSelectedDate = formatDateInSpanish(selectedDateObject);
+    
+          doc.text(`MEMO/{ID-DEPACADEMICO}/{CONSECUTIVO}(?)/${yearOnly}`, 20, 95);
+        
+          doc.text(`DE: {NOMBRE DE JEFE ACADÉMICO}`, 20, 115);
+          doc.text(`JEFE DE {NOMBRE DEL DEPARTAMENTO ACADÉMICO}`, 20, 123);    
+          doc.text(`PARA: {NOMBRE JEFE DCH}`, 20, 140);
+          doc.text(`JEFE DEL DEPARTAMENTO DE CAPITAL HUMANO`, 20, 148);
+        
+          doc.text(`Asunto: ${justificanteType}`, 20, 165);
+        
+          // Contenido principal
+          doc.setFont("helvetica", "normal");
+          doc.text(
+            "Por medio de la presente solicito a usted tenga a bien considerar que", 20, 180
+          );
+          doc.text(
+            `{nombre del empleado} con número de empleado {núm. empleado} laborará, por`, 20, 188
+          );
+          doc.text(
+            `necesidades de esta unidad, el día ${formattedSelectedDate} en un horario de ${timeOnly}`, 20, 196
+          );
+    
+          doc.text(
+            "Quedo a sus órdenes para cualquier duda al respecto y aprovecho para enviarle un cordial", 20, 220
+          );
+          doc.text("saludo.", 20, 228);
+        
+          doc.setFont("helvetica", "bold");
+          doc.text("ATENTAMENTE", 105, 260, { align: "center" });
+      
+          doc.save(`CorrimientoHorario_${selectedDate}.pdf`);
 
-    if (justificanteType === "Pago de tiempo") {
-      doc.text(
-        `Fechas seleccionadas: ${formData.startDate} - ${formData.endDate}`,
-        10,
-        30
-      );
-    } else if (justificanteType === "Corrimiento de horario") {
-      doc.text(`Nuevo horario: ${formData.newTime}`, 10, 30);
-    } else if (justificanteType === "Día económico") {
-      doc.text(`Motivo: ${formData.motivo}`, 10, 30);
-    }
+        }else if (justificanteType === "Pago de tiempo"){
+          // PAGO DE TIEMPO 
+          doc.setTextColor("#9B1003");
+          doc.text("INSTITUTO POLITÉCNICO NACIONAL", 105, 20, { align: "center" });
+          doc.setTextColor("#0979B0");
+          doc.text("ESCUELA SUPERIOR DE CÓMPUTO", 105, 28, { align: "center" });
+          doc.setTextColor("black");
+          doc.text("SUBDIRECCIÓN ACADÉMICA", 105, 36, { align: "center" });
+          
+          // Departamento académico (genérico, se puede cambiar dinámicamente)
+          doc.setFontSize(12);
+          doc.text("[NOMBRE DEL DEPARTAMENTO ACADÉMICO]", 105, 50, { align: "center" });
+        
+          doc.setFontSize(14);
+          doc.text("MEMORANDUM", 105, 70, { align: "center" });
+        
+          doc.setFontSize(12);
 
-    doc.save(`reporte_asistencia_${selectedDate}.pdf`);
-  };
+          // Fecha ACTUAL en español
+          const currentDate = formatDateInSpanish(new Date());
+          doc.text(`${currentDate}`, 140, 87); // Fecha en formato español
+        
+          // Convertir selectedDate (string) a un objeto Date
+          const selectedDateObject = new Date(selectedDate);
+
+          // Formatear selectedDate al formato en español
+          const formattedSelectedDate = formatDateInSpanish(selectedDateObject);
+        
+          doc.text(`MEMO/{ID-DEPACADEMICO}/{CONSECUTIVO}(?)/2025`, 20, 95);
+        
+          doc.text(`DE: {NOMBRE DE JEFE ACADÉMICO}`, 20, 115);
+          doc.text(`JEFE DE {NOMBRE DEL DEPARTAMENTO ACADÉMICO}`, 20, 123);    
+          doc.text(`PARA: {NOMBRE JEFE DCH}`, 20, 140);
+          doc.text(`JEFE DEL DEPARTAMENTO DE CAPITAL HUMANO`, 20, 148);
+        
+          doc.text(`Asunto: ${justificanteType}`, 20, 165);
+        
+          // Contenido principal
+          doc.setFont("helvetica", "normal");
+          doc.text(
+            "Por medio de la presente solicito a usted tenga a bien considerar que", 20, 180
+          );
+          doc.text(
+            `{nombre del empleado} con número de empleado {núm. empleado}, el día`, 20, 188
+          );
+          doc.text(
+            `${formattedSelectedDate} con motivo...`, 20, 196
+          );
+          doc.text(
+            `{descripción de la incidencia};`, 20, 204
+          );
+          doc.text(
+            "entonces para reponer estas horas será de la siguiente manera:", 20, 212
+          );
+          
+          //tabla de horas
+          doc.text(
+            "Fechas seleccionadas.", 20, 225
+          );
+          doc.text(
+            `${formData.startDate} - ${formData.endDate}`, 20, 233
+          );
+
+          doc.text(
+            "Quedo a sus órdenes para cualquier duda al respecto y aprovecho para enviarle un cordial", 20, 246
+          );
+          doc.text("saludo.", 20, 254);
+        
+          doc.setFont("helvetica", "bold");
+          doc.text("ATENTAMENTE", 105, 270, { align: "center" });
+      
+          doc.save(`PagoTiempo_${selectedDate}.pdf`);
+
+        } else if (justificanteType === "Día económico") {
+          // DÍA ECONÓMICO
+          doc.setTextColor("#9B1003");
+          doc.text("INSTITUTO POLITÉCNICO NACIONAL", 105, 20, { align: "center" });
+          doc.setTextColor("#0979B0");
+          doc.text("ESCUELA SUPERIOR DE CÓMPUTO", 105, 28, { align: "center" });
+          doc.setTextColor("black");
+          doc.setFontSize(12);
+          doc.text("SUBDIRECCIÓN ADMINISTRATIVA", 105, 36, { align: "center" });
+          doc.text("DEPARTAMENTO DE CAPITAL HUMANO", 105, 42, { align: "center" });
+          doc.text(`Asunto: ${justificanteType}`, 105, 50, { align: "center" });
+          
+          // Fecha ACTUAL en español
+          const currentDate = formatDateInSpanish(new Date());
+          doc.text(`Ciudad de México a ${currentDate}`, 110, 67); // Fecha en formato español
+        
+          // Convertir selectedDate (string) a un objeto Date
+          const selectedDateObject = new Date(selectedDate);
+          // Formatear selectedDate al formato en español
+          const formattedSelectedDate = formatDateInSpanish(selectedDateObject);
+
+          doc.text("[NOMBRE JEFE DCH]", 20, 80);
+          doc.text("JEFE DEL DEPARTAMENTO DE CAPITAL HUMANO", 20, 85);
+          doc.text("PRESENTE", 20, 95);
+        
+          // Contenido principal
+          doc.setFont("helvetica", "normal");
+          doc.text(
+            `Nombre del empleado: {Nombre del empleado} \t {ROL}`, 20, 115
+          );
+          doc.text(
+            `Número de empleado: {Número Empleado}`, 20, 123
+          );
+          doc.text(
+            `(?)Área de Adscripción: {(puede ser su departamento)}`, 20, 131
+          );
+          doc.text(
+            `Fecha de incidencia: ${formattedSelectedDate}`, 20, 139
+          );
+        
+          doc.text("Tipo incidencia: {}", 20, 150);
+          /*EL PDF MARCA 3 TIPOS DE INCIDENCIA PARA ESTE FORMATO:
+          -> RETARDO MENOR
+          -> RETARDO MAYOR
+          -> DIA ECONOMICO
+          */
+
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+
+          doc.text("____________________", 45, 254, { align: "center" });
+          doc.text("____________________", 105, 254, { align: "center" });
+          doc.text("____________________________", 165, 254, { align: "center" });
+
+          doc.text("INTERESADO", 45, 260, { align: "center" });
+          doc.text(`{Nombre Empleado}`, 45, 270, { align: "center" });
+          doc.text("JEFE INMEDIATO", 105, 260, { align: "center" });
+          doc.text(`{Nombre Jefe}`, 105, 270, { align: "center" });
+          doc.text("JEFE DEL DEPARTAMENTO DE", 165, 260, { align: "center" });
+          doc.text("DE CAPITAL HUMANO", 165, 264, { align: "center" });
+          doc.text(`{Nombre Jefe DCH}`, 165, 270, { align: "center" });
+      
+          doc.save(`DiaEconomico_${selectedDate}.pdf`);
+            }
+        
+      };
 
   const handleLogout = () => {
     logout();
