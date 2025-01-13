@@ -80,16 +80,12 @@ const JefePage = () => {
         );
 
         /*  const result = await response.json(); */
-        const text = await response.text(); // Obtener la respuesta como texto
-        console.log(text); // Ver la respuesta antes de convertirla a JSON
-
-        // Intentar convertir la respuesta a JSON
-        const result = JSON.parse(text);
-        if (result.cod === 1) {
+        const data = await response.json(); // Obtener la respuesta como texto
+        if (data.cod === 1) {
           alert("Los cambios se guardaron correctamente.");
           setChangedStates({});
-        } else if (result.cod === 0) {
-          alert("Hubo un problema al guardar los cambios." + result.msj);
+        } else if (data.cod === 0) {
+          alert("Hubo un problema al guardar los cambios." + data.msj);
         }
       } catch (error) {
         console.error("Error al guardar los cambios:", error);

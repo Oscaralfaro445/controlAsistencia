@@ -1,5 +1,7 @@
 <?php   
 
+session_start();
+
 include "connection.php";
 
 if (!isset($_SESSION["NumEmpleado"])) {
@@ -22,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errores = [];
         foreach ($data as $id => $estado) {
             // Verificar si el estado ha cambiado
-            $sql = "SELECT Estado FROM incidencias WHERE ID = ?";
+            $sql = "SELECT Estado FROM registroIncidencias WHERE ID = ?";
             $stmt = $conexion->prepare($sql);
             $stmt->bind_param("i", $id);
             $stmt->execute();
@@ -32,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Si el estado ha cambiado, actualizar
             if ($estado_actual !== $estado) {
-                $sql_update = "UPDATE incidencias SET Estado = ? WHERE ID = ?";
+                $sql_update = "UPDATE registroIncidencias SET Estado = ? WHERE ID = ?";
                 $stmt_update = $conexion->prepare($sql_update);
                 $stmt_update->bind_param("si", $estado, $id);
 

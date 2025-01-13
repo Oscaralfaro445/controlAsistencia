@@ -289,12 +289,6 @@ const DocentePage = () => {
       const currentDate = formatDateInSpanish(new Date());
       doc.text(`${currentDate}`, 140, 87); // Fecha en formato español
 
-      // Convertir selectedDate (string) a un objeto Date
-      const selectedDateObject = new Date(formData.date);
-
-      // Formatear selectedDate al formato en español
-      const formattedSelectedDate = formatDateInSpanish(selectedDateObject);
-
       doc.text(`MEMO/{ID-DEPACADEMICO}/{CONSECUTIVO}(?)/2025`, 20, 95);
 
       doc.text(`DE: {NOMBRE DE JEFE ACADÉMICO}`, 20, 115);
