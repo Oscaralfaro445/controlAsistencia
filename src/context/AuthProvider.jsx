@@ -9,7 +9,6 @@ export const AuthProvider = ({ children }) => {
   // Al iniciar sesión
   const login = (userData) => {
     setUser(userData); // Guarda el usuario en el estado
-    localStorage.setItem("user", JSON.stringify(userData));
   };
 
   // Al cerrar sesión

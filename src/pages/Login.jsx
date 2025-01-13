@@ -34,12 +34,16 @@ const Login = () => {
         setError(null);
         login({
           NumEmpleado: data.NumEmpleado,
-          rol: data.rol,
           Academia: data.Academia,
+          rol: data.rol,
         });
         localStorage.setItem(
           "user",
-          JSON.stringify({ NumEmpleado: data.NumEmpleado, rol: data.rol })
+          JSON.stringify({
+            NumEmpleado: data.NumEmpleado,
+            rol: data.rol,
+            Academia: data.Academia,
+          })
         );
         navigate(`/homePage/${data.rol}`);
       } else {

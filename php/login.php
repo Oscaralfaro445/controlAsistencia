@@ -10,7 +10,7 @@ $respAX = [];
 $hoy = date("j M Y / h:i:s");
 
 // Verifica las credenciales utilizando consultas preparadas
-$sqlCheckEmpleado = "SELECT login.NumEmpleado, empleados.rol FROM login INNER JOIN empleados ON login.NumEmpleado = empleados.NumEmpleado WHERE login.NumEmpleado = ? AND login.password = ?";
+$sqlCheckEmpleado = "SELECT login.NumEmpleado, empleados.rol, empleados.Academia FROM login INNER JOIN empleados ON login.NumEmpleado = empleados.NumEmpleado WHERE login.NumEmpleado = ? AND login.password = ?";
 $stmt = $conexion->prepare($sqlCheckEmpleado);
 $stmt->bind_param("ss", $NumEmpleado, $password);
 $stmt->execute();
@@ -20,9 +20,11 @@ if ($result->num_rows === 1) {
     // Credenciales válidas
     $row = $result->fetch_assoc();
     $rol = $row["rol"];
+    $academia = $row["Academia"]; // Obtener la Academia
+    $numEmpleado = $row["NumEmpleado"]; // Obtener el NumEmpleado
 
     // Guarda el ID del usuario y su rol en la sesión
-    $_SESSION["NumEmpleado"] = $NumEmpleado;
+    $_SESSION["NumEmpleado"] = $numEmpleado;
     $_SESSION["rol"] = $rol;
 
     // Define el mensaje y la redirección según el rol
@@ -31,6 +33,8 @@ if ($result->num_rows === 1) {
     $respAX["icono"] = "success";
     $respAX["extra"] = $hoy;
     $respAX["rol"] = $rol; // Agregar el rol a la respuesta
+    $respAX["NumEmpleado"] = $numEmpleado; // Incluir el NumEmpleado en la respuesta
+    $respAX["Academia"] = $academia; // Incluir la Academia en la respuesta
 
 } else {
     // Credenciales incorrectas

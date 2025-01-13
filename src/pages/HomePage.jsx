@@ -44,8 +44,8 @@ const HomePage = () => {
               ...user,
               CURP: data.empleado.CURP,
               Nombre: data.empleado.Nombre,
-              ApellidoP: data.empleado.ApellidoP,
-              ApellidoM: data.empleado.ApellidoM,
+              PrimerApe: data.empleado.PrimerApe,
+              SegundoApe: data.empleado.SegundoApe,
             });
           } else {
             setError(data.msj);

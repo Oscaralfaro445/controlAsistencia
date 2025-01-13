@@ -1,8 +1,7 @@
-<?php
+<?php   
 
 include "connection.php";
 
-// Verificar si el usuario tiene la sesión activa
 if (!isset($_SESSION["NumEmpleado"])) {
     echo json_encode([
         "cod" => 0,
@@ -10,41 +9,46 @@ if (!isset($_SESSION["NumEmpleado"])) {
         "icono" => "error"
     ]);
     exit;
-}
+}// Verificar si el usuario tiene la sesión activa
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Obtén los datos de la solicitud POST
-    $data = json_decode($_POST['incidencias'], true); // Decodificar el JSON
+    // Leer el cuerpo de la solicitud
+    $input = file_get_contents('php://input');
+    $data = json_decode($input, true); // Decodificar el JSON
 
     // Verificar si el JSON es válido
     if (is_array($data)) {
-        foreach ($data as $incidencia) {
-            // Extraer la información de cada incidencia
-            $id = $incidencia['ID'];
-            $estado = $incidencia['Estado'];
-
+        $errores = [];
+        foreach ($data as $id => $estado) {
             // Verificar si el estado ha cambiado
             $sql = "SELECT Estado FROM incidencias WHERE ID = ?";
-            $stmt = $conn->prepare($sql);
+            $stmt = $conexion->prepare($sql);
             $stmt->bind_param("i", $id);
             $stmt->execute();
             $stmt->bind_result($estado_actual);
             $stmt->fetch();
+            $stmt->close();
 
             // Si el estado ha cambiado, actualizar
             if ($estado_actual !== $estado) {
-                $sql = "UPDATE incidencias SET Estado = ? WHERE ID = ?";
-                $stmt = $conn->prepare($sql);
-                $stmt->bind_param("si", $estado, $id);
+                $sql_update = "UPDATE incidencias SET Estado = ? WHERE ID = ?";
+                $stmt_update = $conexion->prepare($sql_update);
+                $stmt_update->bind_param("si", $estado, $id);
 
-                if (!$stmt->execute()) {
-                    echo json_encode(['cod' => 0, 'msj' => 'Error en la actualización']);
-                    exit;
+                if (!$stmt_update->execute()) {
+                    $errores[] = "Error al actualizar la incidencia con ID $id";
                 }
+
+                $stmt_update->close();
             }
         }
 
-        echo json_encode(['cod' => 1, 'msj' => 'Incidencias actualizadas con éxito']);
+        if (empty($errores)) {
+            echo json_encode(['cod' => 1, 'msj' => 'Incidencias actualizadas con éxito']);
+        } else {
+            echo json_encode(['cod' => 0, 'msj' => implode(", ", $errores)]);
+        }
     } else {
         echo json_encode(['cod' => 0, 'msj' => 'Datos inválidos']);
     }
@@ -53,7 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Cerrar la conexión
-$stmt->close();
-$conn->close();
+$conexion->close();
 
 ?>

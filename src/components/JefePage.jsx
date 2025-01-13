@@ -4,12 +4,11 @@ import { useNavigate } from "react-router-dom";
 
 const JefePage = () => {
   const navigate = useNavigate();
-  const { logout } = useAuthContext();
+  const { logout, user } = useAuthContext();
   const [selectedOption, setSelectedOption] = useState("dashboard");
   const [incidencias, setIncidencias] = useState([]);
-  const [updatedStates, setUpdatedStates] = useState({});
+  const [changedStates, setChangedStates] = useState({}); // Almacena los cambios realizados
 
-  // Funciones de menú
   const handleMenuClick = (option) => {
     setSelectedOption(option);
   };
@@ -36,8 +35,11 @@ const JefePage = () => {
 
         const data = await response.json();
         if (data.cod === 1) {
-          setIncidencias(data.incidencias);
-          console.log(data.incidencias);
+          const incidenciasConEstado = data.incidencias.map((incidencia) => ({
+            ...incidencia,
+            Estado: incidencia.Estado || "Pendiente", // Establece un estado por defecto si está vacío
+          }));
+          setIncidencias(incidenciasConEstado);
         } else {
           console.log(data.msj);
         }
@@ -49,18 +51,54 @@ const JefePage = () => {
     fetchIncidencias();
   }, []);
 
-  const handeStateChange = (id, newState) => {
-    setUpdatedStates((prevState) => ({
-      ...prevState,
-      [id]: newState,
+  const handleStateChange = (id, newEstado) => {
+    setChangedStates((prev) => ({
+      ...prev,
+      [id]: newEstado,
     }));
+
+    setIncidencias((prev) =>
+      prev.map((item) =>
+        item.ID === id ? { ...item, Estado: newEstado } : item
+      )
+    );
   };
 
-  const handleFinalize = () => {};
+  const handleFinalize = async () => {
+    console.log(changedStates);
+    if (confirm("¿Desea actualizar almacenar los cambios en los estados?")) {
+      try {
+        const response = await fetch(
+          "http://localhost/control_Asistencia/php/updateIncidencias.php",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(changedStates),
+          }
+        );
+
+        /*  const result = await response.json(); */
+        const text = await response.text(); // Obtener la respuesta como texto
+        console.log(text); // Ver la respuesta antes de convertirla a JSON
+
+        // Intentar convertir la respuesta a JSON
+        const result = JSON.parse(text);
+        if (result.cod === 1) {
+          alert("Los cambios se guardaron correctamente.");
+          setChangedStates({});
+        } else if (result.cod === 0) {
+          alert("Hubo un problema al guardar los cambios." + result.msj);
+        }
+      } catch (error) {
+        console.error("Error al guardar los cambios:", error);
+      }
+    }
+  };
 
   return (
     <div className="w-full flex min-h-screen">
-      {/* Barra lateral */}
       <aside className="w-1/4 bg-blue-700 text-white p-6">
         <h2 className="text-2xl font-semibold mb-6">
           Menú de Jefe de Departamento
@@ -78,7 +116,6 @@ const JefePage = () => {
           >
             Solicitudes de incidencias
           </li>
-
           <li
             className="cursor-pointer hover:bg-blue-600 p-3 rounded-md"
             onClick={handleLogout}
@@ -88,7 +125,6 @@ const JefePage = () => {
         </ul>
       </aside>
 
-      {/* Área de contenido */}
       <section className="flex-1 bg-gray-50 p-10">
         <h1 className="text-3xl font-bold text-gray-800 mb-6">
           Área de Jefe de Departamento
@@ -138,34 +174,46 @@ const JefePage = () => {
                 </tr>
               </thead>
               <tbody className="text-center">
-                {incidencias.map((incidencia) => (
-                  <tr key={incidencia.ID} className={"bg-gray-50"}>
-                    <td className="px-4 py-2 border border-gray-300">
-                      {incidencia.NumEmpleado}
-                    </td>
-                    <td className="px-4 py-2 border border-gray-300">
-                      {incidencia.Nombre}
-                    </td>
-                    <td className="px-4 py-2 border border-gray-300">
-                      {incidencia.Academia}
-                    </td>
-                    <td className="px-4 py-2 border border-gray-300">
-                      {incidencia.TipoIncidencia}
-                    </td>
-                    <td className="px-4 py-2 border border-gray-300">
-                      {incidencia.Estado}
-                    </td>
-                    <td className="px-4 py-2 border border-gray-300">
-                      {incidencia.FechaSolicitud}
-                    </td>
-                  </tr>
-                ))}
+                {incidencias
+                  .filter((incidencia) => incidencia.Academia === user.Academia)
+                  .map((incidencia) => (
+                    <tr key={incidencia.ID} className={"bg-gray-50"}>
+                      <td className="px-4 py-2 border border-gray-300">
+                        {incidencia.NumEmpleado}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-300">
+                        {incidencia.Nombre}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-300">
+                        {incidencia.Academia}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-300">
+                        {incidencia.TipoIncidencia}
+                      </td>
+                      <td className="px-4 py-2 border border-gray-300">
+                        <select
+                          value={incidencia.Estado}
+                          onChange={(e) =>
+                            handleStateChange(incidencia.ID, e.target.value)
+                          }
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        >
+                          <option value="Pendiente">Pendiente</option>
+                          <option value="Aprobado">Aprobado</option>
+                          <option value="Rechazado">Rechazado</option>
+                        </select>
+                      </td>
+                      <td className="px-4 py-2 border border-gray-300">
+                        {incidencia.FechaSolicitud}
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
 
             <button
               className="mt-6 bg-indigo-600 text-white py-2 px-6 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200 text-lg"
-              onClick={() => {}}
+              onClick={handleFinalize}
             >
               Finalizar
             </button>
